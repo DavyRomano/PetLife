@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1" name="viewport" />
+    <meta content="#fbfaf7" name="theme-color" />
+    <meta
+      content="PetLife: carinho, produtos e cuidados para seu pet."
+      name="description"
+    />
+    <title>PetLife | Login</title>
+    <link href="../css/style.css" rel="stylesheet" />
+  </head>
+  <body data-page="login">
+    <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
+    <div data-header></div>
+    <main id="conteudo">
+      <section class="auth-layout shell">
+        <div class="auth-aside">
+          <p class="eyebrow">BEM-VINDO DE VOLTA</p>
+          <h1>Seu mundo pet começa <em>aqui.</em></h1>
+          <p>
+            Entre para acompanhar seus pedidos e continuar cuidando de quem mais
+            importa.
+          </p>
+          <img
+            alt="Cachorro relaxando"
+            decoding="async"
+            src="../img/cachorro.jpg"
+          />
+        </div>
+        <div class="auth-panel">
+          <div class="auth-heading">
+            <span class="auth-badge">ACESSO PETLIFE</span>
+            <h2>Entrar na conta</h2>
+            <p>Que bom ter você por aqui novamente.</p>
+          </div>
+          <form
+            action="../php/auth.php?acao=login"
+            class="stack-form"
+            id="loginForm"
+            method="post"
+          >
+            <label>
+              E-mail
+              <input
+                autocomplete="email"
+                maxlength="150"
+                name="email"
+                placeholder="seuemail@exemplo.com"
+                required=""
+                type="email"
+              />
+            </label>
+            <label>
+              Senha
+              <input
+                autocomplete="current-password"
+                name="senha"
+                placeholder="Sua senha"
+                required=""
+                type="password"
+              />
+            </label>
+            <button class="btn primary full" type="submit">
+              Entrar na minha conta ↗
+            </button>
+            <p class="form-feedback" id="loginMessage" role="status"></p>
+          </form>
+          <details class="register-panel" id="cadastro">
+            <summary>Criar uma conta na PetLife</summary>
+            <p>Preencha seus dados para começar.</p>
+            <form
+              action="../php/auth.php?acao=cadastro"
+              class="stack-form"
+              id="registerForm"
+              method="post"
+            >
+              <label>
+                Nome completo
+                <input
+                  autocomplete="name"
+                  maxlength="100"
+                  minlength="2"
+                  name="nome"
+                  placeholder="Como podemos chamar você?"
+                  required=""
+                />
+              </label>
+              <label>
+                E-mail
+                <input
+                  autocomplete="email"
+                  maxlength="150"
+                  name="email"
+                  placeholder="seuemail@exemplo.com"
+                  required=""
+                  type="email"
+                />
+              </label>
+              <label>
+                Senha
+                <input
+                  autocomplete="new-password"
+                  minlength="8"
+                  name="senha"
+                  placeholder="Mínimo de 8 caracteres"
+                  required=""
+                  type="password"
+                />
+              </label>
+              <label>
+                Confirmar senha
+                <input
+                  autocomplete="new-password"
+                  minlength="8"
+                  name="confirmacao"
+                  placeholder="Digite a senha novamente"
+                  required=""
+                  type="password"
+                />
+              </label>
+              <button class="btn primary full" type="submit">
+                Criar minha conta ↗
+              </button>
+              <p class="form-feedback" id="registerMessage" role="status"></p>
+            </form>
+          </details>
+        </div>
+      </section>
+    </main>
+    <div data-footer></div>
+    <div aria-live="polite" class="toast" id="toast" role="status"></div>
+    <script defer src="../js/layout.js"></script>
+    <script defer="" src="../js/script.js"></script>
+  </body>
+</html>

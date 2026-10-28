@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1" name="viewport" />
+    <meta content="#fbfaf7" name="theme-color" />
+    <meta
+      content="PetLife: carinho, produtos e cuidados para seu pet."
+      name="description"
+    />
+    <title>PetLife | Painel de gestão</title>
+    <link href="../css/style.css" rel="stylesheet" />
+  </head>
+  <body data-page="admin">
+    <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
+    <div data-header></div>
+    <main id="conteudo">
+      <section class="shell page-intro admin-intro">
+        <p class="eyebrow">ÁREA RESTRITA / GESTÃO</p>
+        <h1>Painel <em>PetLife.</em></h1>
+        <p>
+          Controle produtos, usuários, mensagens e pedidos em um único lugar.
+        </p>
+      </section>
+      <section class="shell admin-layout">
+        <aside aria-label="Seções do painel" class="admin-sidebar">
+          <button
+            class="admin-tab selected"
+            data-section="resumo"
+            type="button"
+          >
+            Visão geral
+          </button>
+          <button class="admin-tab" data-section="produtos" type="button">
+            Produtos
+          </button>
+          <button class="admin-tab" data-section="usuarios" type="button">
+            Usuários
+          </button>
+          <button class="admin-tab" data-section="contatos" type="button">
+            Mensagens
+          </button>
+          <button class="admin-tab" data-section="pedidos" type="button">
+            Pedidos
+          </button>
+        </aside>
+        <div class="admin-content">
+          <div class="form-feedback" id="adminStatus" role="status"></div>
+          <div aria-live="polite" id="adminView">
+            <div class="loading-card">Carregando painel...</div>
+          </div>
+        </div>
+      </section>
+      <dialog class="admin-dialog" id="adminEditor">
+        <form class="stack-form" id="productEditor">
+          <div class="modal-top">
+            <h2 id="editorTitle">Cadastrar produto</h2>
+            <button
+              aria-label="Fechar"
+              class="icon-button"
+              id="closeEditor"
+              type="button"
+            >
+              ×
+            </button>
+          </div>
+          <input name="id" type="hidden" value="0" />
+          <label>
+            Nome do produto
+            <input maxlength="150" name="nome" required="" />
+          </label>
+          <label>
+            Categoria
+            <select name="categoria" required="">
+              <option value="Ração">Ração</option>
+              <option value="Brinquedo">Brinquedo</option>
+              <option value="Acessório">Acessório</option>
+              <option value="Higiene">Higiene</option>
+            </select>
+          </label>
+          <label>
+            Descrição
+            <textarea maxlength="2000" name="descricao" rows="3"></textarea>
+          </label>
+          <div class="price-pair">
+            <label>
+              Preço (R$)
+              <input
+                max="9999999"
+                min="0"
+                name="preco"
+                required=""
+                step="0.01"
+                type="number"
+              />
+            </label>
+            <label>
+              Estoque
+              <input
+                max="100000"
+                min="0"
+                name="estoque"
+                required=""
+                step="1"
+                type="number"
+              />
+            </label>
+          </div>
+          <label>
+            Imagem
+            <select name="imagem" required="">
+              <option value="raçao.jpg">Ração</option>
+              <option value="bola.jpg">Bola</option>
+              <option value="cama.jpg">Cama</option>
+              <option value="coleira.jpg">Coleira</option>
+              <option value="cachorro.jpg">Cachorro</option>
+              <option value="hero.jpg">Hero</option>
+            </select>
+          </label>
+          <button class="btn primary full" type="submit">Salvar produto</button>
+        </form>
+      </dialog>
+      <dialog class="admin-dialog confirm-dialog" id="confirmDialog">
+        <h2>Confirmar ação</h2>
+        <p id="confirmText"></p>
+        <div class="button-row">
+          <button class="btn outline" id="confirmNo" type="button">
+            Cancelar
+          </button>
+          <button class="btn primary" id="confirmYes" type="button">
+            Confirmar
+          </button>
+        </div>
+      </dialog>
+    </main>
+    <div data-footer></div>
+    <div aria-live="polite" class="toast" id="toast" role="status"></div>
+    <script defer src="../js/layout.js"></script>
+    <script defer src="../js/admin.js"></script>
+    <script defer="" src="../js/script.js"></script>
+  </body>
+</html>

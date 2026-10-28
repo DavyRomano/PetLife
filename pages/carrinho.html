@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1" name="viewport" />
+    <meta content="#fbfaf7" name="theme-color" />
+    <meta
+      content="PetLife: carinho, produtos e cuidados para seu pet."
+      name="description"
+    />
+    <title>PetLife | Carrinho</title>
+    <link href="../css/style.css" rel="stylesheet" />
+  </head>
+  <body data-page="carrinho">
+    <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
+    <div data-header></div>
+    <main id="conteudo">
+      <div aria-label="Etapas da compra" class="cart-steps">
+        <span class="step-current">01 · Sacola</span
+        ><span>02 · Conferência</span><span>03 · Pedido registrado</span>
+      </div>
+      <section class="shell page-intro">
+        <p class="eyebrow">QUASE LÁ</p>
+        <h1>Seu <em>carrinho.</em></h1>
+        <p>Confira os itens e finalize seu pedido demonstrativo.</p>
+      </section>
+      <section class="shell cart-layout">
+        <div class="surface">
+          <div class="surface-title">
+            <h2>Itens selecionados</h2>
+            <a class="quiet-link" href="produtos.html">+ Continuar comprando</a>
+          </div>
+          <div aria-live="polite" id="cartItems"></div>
+        </div>
+        <aside class="surface order-summary">
+          <h2>Resumo do pedido</h2>
+          <div class="summary-line">
+            <span>Subtotal</span><strong id="cartSubtotal">R$ 0,00</strong>
+          </div>
+          <div class="summary-line">
+            <span>Entrega</span><span>Não calculada</span>
+          </div>
+          <div class="summary-total">
+            <span>Total dos itens</span><strong id="cartTotal">R$ 0,00</strong>
+          </div>
+          <p class="muted small">
+            Projeto demonstrativo. Nenhuma cobrança ou entrega real será
+            realizada.
+          </p>
+          <button class="btn primary full" id="checkoutCart" type="button">
+            Finalizar pedido ↗
+          </button>
+          <button class="text-button full" id="clearCart" type="button">
+            Esvaziar carrinho
+          </button>
+          <p class="form-feedback" id="cartMessage" role="status"></p>
+        </aside>
+      </section>
+    </main>
+    <div data-footer></div>
+    <div aria-live="polite" class="toast" id="toast" role="status"></div>
+    <script defer src="../js/layout.js"></script>
+    <script defer="" src="../js/script.js"></script>
+  </body>
+</html>

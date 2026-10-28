@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1" name="viewport" />
+    <meta content="#fbfaf7" name="theme-color" />
+    <meta
+      content="PetLife: carinho, produtos e cuidados para seu pet."
+      name="description"
+    />
+    <title>PetLife | Produtos</title>
+    <link href="../css/style.css" rel="stylesheet" />
+  </head>
+  <body data-page="produtos">
+    <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
+    <div data-header></div>
+    <main id="conteudo">
+      <div class="catalog-feature">
+        <div>
+          <span class="micro-label">PETLIFE • LOJA</span>
+          <h2>Encontre o favorito do seu pet.</h2>
+          <p>
+            Pesquise, filtre e escolha com praticidade. Todos os produtos são
+            carregados do catálogo.
+          </p>
+        </div>
+        <img alt="Coleira para pets" loading="lazy" src="../img/coleira.jpg" />
+      </div>
+      <section class="shell page-intro">
+        <p class="eyebrow">PETLIFE STORE / CATÁLOGO</p>
+        <h1>Tudo para seu <em>melhor amigo.</em></h1>
+        <p>
+          Encontre seus favoritos, filtre por categoria e adicione ao carrinho.
+        </p>
+      </section>
+      <section class="shell catalog-area">
+        <form autocomplete="off" class="filter-panel" id="productFilters">
+          <div class="filter-heading">
+            <h2>Filtrar produtos</h2>
+            <button class="text-button" type="reset">Limpar filtros</button>
+          </div>
+          <label>
+            Pesquisar
+            <input
+              id="productSearch"
+              maxlength="100"
+              placeholder="O que seu pet precisa?"
+              type="search"
+            />
+          </label>
+          <label>
+            Categoria
+            <select id="productCategory">
+              <option value="">Todas as categorias</option>
+              <option value="Ração">Alimentação</option>
+              <option value="Brinquedo">Brinquedos</option>
+              <option value="Acessório">Acessórios</option>
+              <option value="Higiene">Higiene</option>
+            </select>
+          </label>
+          <div class="price-pair">
+            <label>
+              Preço mínimo
+              <input
+                id="productMin"
+                min="0"
+                placeholder="R$ 0"
+                step="0.01"
+                type="number"
+              />
+            </label>
+            <label>
+              Preço máximo
+              <input
+                id="productMax"
+                min="0"
+                placeholder="Sem limite"
+                step="0.01"
+                type="number"
+              />
+            </label>
+          </div>
+          <label>
+            Organizar por
+            <select id="productSort">
+              <option value="recentes">Mais recentes</option>
+              <option value="menor">Menor preço</option>
+              <option value="maior">Maior preço</option>
+              <option value="az">Ordem alfabética</option>
+            </select>
+          </label>
+          <button class="btn primary full" type="submit">
+            Aplicar filtros ↗
+          </button>
+        </form>
+        <div>
+          <div class="catalog-toolbar">
+            <div>
+              <h2>Escolhas para seu pet</h2>
+              <p id="productCount">Consultando catálogo...</p>
+            </div>
+          </div>
+          <div aria-live="polite" class="products-grid" id="productsList">
+            <div class="loading-card">Carregando produtos...</div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <div data-footer></div>
+    <div aria-live="polite" class="toast" id="toast" role="status"></div>
+    <script defer src="../js/layout.js"></script>
+    <script defer="" src="../js/script.js"></script>
+  </body>
+</html>

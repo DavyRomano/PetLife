@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1" name="viewport" />
+    <meta content="#fbfaf7" name="theme-color" />
+    <meta
+      content="PetLife: carinho, produtos e cuidados para seu pet."
+      name="description"
+    />
+    <title>PetLife | Serviços</title>
+    <link href="../css/style.css" rel="stylesheet" />
+  </head>
+  <body data-page="servicos">
+    <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
+    <div data-header></div>
+    <main id="conteudo">
+      <div class="services-spotlight">
+        <img
+          alt="Cachorro em momento de cuidado"
+          loading="lazy"
+          src="../img/cachorro.jpg"
+        />
+        <div>
+          <span class="micro-label">CUIDADO COM ATENÇÃO</span>
+          <h2>Uma rotina mais leve começa por pequenos cuidados.</h2>
+          <p>
+            Higiene, brincadeiras e bem-estar: conheça cada opção e entre em
+            contato para esclarecer dúvidas.
+          </p>
+          <a class="btn primary" href="#solicitar-servico"
+            >Solicitar atendimento</a
+          >
+        </div>
+      </div>
+      <section class="shell page-intro">
+        <p class="eyebrow">ALÉM DOS PRODUTOS</p>
+        <h1>Cada cuidado faz a <em>diferença.</em></h1>
+        <p>
+          Conheça áreas de cuidado que inspiram a PetLife. Envie uma solicitação
+          pelo formulário. A data depende de confirmação posterior.
+        </p>
+      </section>
+      <section class="shell services-grid">
+        <article class="service-block">
+          <span class="service-number">01 / HIGIENE</span>
+          <h2>Banho e tosa</h2>
+          <p>
+            Higiene, conforto e carinho: cuidados importantes no dia a dia de
+            quem tem pets.
+          </p>
+          <a href="contato.html">Enviar dúvida ↗</a>
+        </article>
+        <article class="service-block">
+          <span class="service-number">02 / SAÚDE</span>
+          <h2>Bem-estar</h2>
+          <p>
+            Acompanhamento veterinário é fundamental para uma rotina mais
+            saudável.
+          </p>
+          <a href="contato.html">Saiba mais ↗</a>
+        </article>
+        <article class="service-block">
+          <span class="service-number">03 / NUTRIÇÃO</span>
+          <h2>Alimentação</h2>
+          <p>
+            Encontre opções de alimentação e acessórios no catálogo da loja.
+          </p>
+          <a href="produtos.html?categoria=Ra%C3%A7%C3%A3o">Ver produtos ↗</a>
+        </article>
+        <article class="service-block">
+          <span class="service-number">04 / DIVERSÃO</span>
+          <h2>Brincadeiras</h2>
+          <p>
+            Itens para entretenimento e momentos especiais com seu companheiro.
+          </p>
+          <a href="produtos.html?categoria=Brinquedo">Ver brinquedos ↗</a>
+        </article>
+      </section>
+      <section class="shell newsletter section-gap">
+        <div>
+          <p class="eyebrow">TEM ALGUMA PERGUNTA?</p>
+          <h2>Fale com a nossa equipe.</h2>
+          <p>Deixe sua mensagem pelo formulário de contato.</p>
+        </div>
+        <a class="btn light" href="contato.html">Falar com a PetLife ↗</a>
+      </section>
+      <section class="shell booking-area section-gap" id="solicitar-servico">
+        <div class="booking-copy">
+          <span class="micro-label">SOLICITAÇÃO ONLINE</span>
+          <h2>Solicite um atendimento</h2>
+          <p>
+            Conte o que seu pet precisa. A solicitação será registrada; o
+            horário só será confirmado posteriormente.
+          </p>
+          <div class="booking-note">
+            Solicitação não equivale a agendamento confirmado.
+          </div>
+        </div>
+        <form class="booking-form" id="bookingForm">
+          <label>
+            Seu nome
+            <input
+              autocomplete="name"
+              maxlength="100"
+              minlength="2"
+              name="nome"
+              required=""
+              type="text"
+            />
+          </label>
+          <label>
+            E-mail
+            <input
+              autocomplete="email"
+              maxlength="150"
+              name="email"
+              required=""
+              type="email"
+            />
+          </label>
+          <label>
+            Serviço
+            <select name="servico" required="">
+              <option value="">Selecione</option>
+              <option>Banho e tosa</option>
+              <option>Orientação sobre bem-estar</option>
+              <option>Outras informações</option>
+            </select>
+          </label>
+          <label>
+            Data preferida
+            <input name="data_preferida" required="" type="date" />
+          </label>
+          <label>
+            Observações
+            <textarea
+              maxlength="1000"
+              name="observacoes"
+              placeholder="Conte sobre seu pet (opcional)"
+              rows="4"
+            ></textarea>
+          </label>
+          <button class="btn primary" type="submit">Enviar solicitação</button>
+          <p
+            aria-live="polite"
+            class="form-feedback"
+            id="bookingMessage"
+            role="status"
+          ></p>
+        </form>
+      </section>
+    </main>
+    <div data-footer></div>
+    <div aria-live="polite" class="toast" id="toast" role="status"></div>
+    <script defer src="../js/layout.js"></script>
+    <script defer="" src="../js/script.js"></script>
+  </body>
+</html>
