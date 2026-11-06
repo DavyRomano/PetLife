@@ -1,3 +1,9 @@
+const raizSite = new URL('../', document.currentScript.src);
+
+function caminhoSite(caminho) {
+  return new URL(caminho, raizSite).href;
+}
+
 function selecionar(seletor) {
   return document.querySelector(seletor);
 }
@@ -25,7 +31,7 @@ async function api(caminho, metodo = 'GET', dados) {
     opcoes.headers['Content-Type'] = 'application/json';
     opcoes.body = JSON.stringify(dados);
   }
-  const resposta = await fetch('/api/' + caminho, opcoes);
+  const resposta = await fetch(caminhoSite('api/' + caminho), opcoes);
   const resultado = await resposta.json().catch(function () {
     throw new Error('O servidor não respondeu corretamente. Tente novamente.');
   });
@@ -47,7 +53,7 @@ function vazio(titulo, mensagem) {
   return `<div class="empty">
     <span class="empty-icon" aria-hidden="true">♡</span>
     <h2>${texto(titulo)}</h2><p>${texto(mensagem)}</p>
-    <a class="btn" href="/pages/produtos.html">Explorar produtos ↗</a>
+    <a class="btn" href="${caminhoSite('pages/produtos.html')}">Explorar produtos ↗</a>
   </div>`;
 }
 
@@ -61,14 +67,14 @@ function card(produto, editar) {
   let botoes = '';
   if (editar) {
     botoes = `<div class="product-admin">
-      <a href="/pages/produto.html?id=${produto.id}">Editar</a>
+      <a href="${caminhoSite('pages/produto.html?id=' + produto.id)}">Editar</a>
       <button class="link-button delete-link" data-excluir="${produto.id}">Excluir</button>
     </div>`;
   }
   return `<article class="product-card">
     <div class="product-image">
       <span class="category-label">${texto(produto.categoria)}</span>
-      <img src="/${texto(produto.imagem)}" alt="${texto(produto.nome)}" loading="lazy">
+      <img src="${texto(caminhoSite(produto.imagem))}" alt="${texto(produto.nome)}" loading="lazy">
     </div>
     <div class="product-body">
       <h3>${texto(produto.nome)}</h3><p>${texto(produto.descricao)}</p>
@@ -107,7 +113,7 @@ function mostrarCarrinho(carrinho) {
   let html = '';
   for (const item of carrinho.itens) {
     html += `<article class="cart-item">
-      <img src="/${texto(item.imagem)}" alt="${texto(item.nome)}">
+      <img src="${texto(caminhoSite(item.imagem))}" alt="${texto(item.nome)}">
       <div><h2>${texto(item.nome)}</h2><p>${dinheiro(item.preco)} / unidade</p>
         <div class="quantity">
           <button data-produto="${item.id}" data-quantidade="${item.quantidade - 1}" aria-label="Diminuir quantidade de ${texto(item.nome)}">−</button>
@@ -207,7 +213,7 @@ async function carregarEdicao() {
 
 function atualizarPrevia() {
   const imagem = selecionar('#product-form').elements.imagem.value;
-  selecionar('.product-preview').src = '/' + imagem;
+  selecionar('.product-preview').src = caminhoSite(imagem);
 }
 
 function trocarFormulario(tipo) {
@@ -257,13 +263,13 @@ async function enviarFormulario(evento) {
     if (form.id === 'checkout') {
       const pedido = await api('pedidos', 'POST', dados);
       form.reset();
-      location.href = '/pages/pedidos.html?novo=' + pedido.id;
+      location.href = caminhoSite('pages/pedidos.html?novo=' + pedido.id);
     }
     if (form.id === 'product-form') {
       const id = new URLSearchParams(location.search).get('id');
       if (id) await api('produtos/' + id, 'PUT', dados);
       else await api('produtos', 'POST', dados);
-      location.href = '/pages/administracao.html';
+      location.href = caminhoSite('pages/administracao.html');
     }
   } catch (erro) {
     if (mensagem) {
