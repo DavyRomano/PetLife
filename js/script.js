@@ -8,6 +8,7 @@ function selecionar(seletor) {
   return document.querySelector(seletor);
 }
 
+const catalogo = new Map();
 let usuarioAtual = null;
 let tokenCsrf = '';
 
@@ -64,6 +65,7 @@ function contador(carrinho) {
 }
 
 function card(produto, editar) {
+  catalogo.set(produto.id, produto);
   let botoes = '';
   if (editar) {
     botoes = `<div class="product-admin">
@@ -78,6 +80,7 @@ function card(produto, editar) {
     </div>
     <div class="product-body">
       <h3>${texto(produto.nome)}</h3><p>${texto(produto.descricao)}</p>
+      <button class="link-button detalhes-link" data-detalhes="${produto.id}">Ver detalhes</button>
       <div class="price-row">
         <strong>${dinheiro(produto.preco)}</strong>
         <button class="add-button" data-adicionar="${produto.id}" aria-label="Adicionar ${texto(produto.nome)} ao carrinho">+</button>
@@ -91,6 +94,10 @@ async function carregarProdutos() {
   const busca = selecionar('#busca').value;
   const categoria = selecionar('#categoria').value;
   const produtos = await api('produtos?busca=' + encodeURIComponent(busca) + '&categoria=' + encodeURIComponent(categoria));
+  const ordem = selecionar('#ordem').value;
+  if (ordem === 'menor') produtos.sort((a, b) => a.preco - b.preco);
+  if (ordem === 'maior') produtos.sort((a, b) => b.preco - a.preco);
+  if (ordem === 'nome') produtos.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
   let html = '';
   for (const produto of produtos) html += card(produto, Boolean(usuarioAtual?.admin));
   if (!produtos.length) html = vazio('Nenhum produto encontrado.', 'Tente outra busca ou categoria.');
@@ -171,6 +178,14 @@ async function carregarConta() {
 }
 
 async function carregarAdmin() {
+  const painel = await api('painel');
+  const total = painel.pedidos.reduce((soma, pedido) => soma + Math.round(pedido.total * 100), 0);
+  selecionar('#resumo-pedidos').textContent = painel.pedidos.length + ' pedido(s) · Total registrado de ' + dinheiro(total / 100);
+  const linhas = painel.pedidos.map(p => `<tr><td>#${p.id}</td><td>${texto(p.nome)}</td><td>${p.unidades}</td><td>${dinheiro(p.total)}</td></tr>`);
+  selecionar('#pedidos-loja').innerHTML = linhas.length
+    ? '<table><thead><tr><th>Pedido</th><th>Cliente</th><th>Unidades</th><th>Total</th></tr></thead><tbody>' + linhas.join('') + '</tbody></table>'
+    : '<p>Ainda não há pedidos finalizados.</p>';
+  selecionar('#resumo-categorias').innerHTML = painel.categorias.map(c => `<li>${texto(c.nome)} <b>${c.produtos}</b></li>`).join('');
   const usuarios = await api('usuarios');
   let html = '<table><thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Ação</th></tr></thead><tbody>';
   for (const usuario of usuarios) {
@@ -293,6 +308,7 @@ async function clicarBotao(evento) {
       selecionar('.cart-pill').classList.remove('pulse');
       void selecionar('.cart-pill').offsetWidth;
       selecionar('.cart-pill').classList.add('pulse');
+      if (selecionar('#detalhe')?.open) selecionar('#detalhe').close();
       avisar('Produto adicionado ao carrinho.');
     }
     if (botao.dataset.excluir && confirm('Excluir este produto? Os pedidos anteriores serão mantidos.')) {
@@ -338,6 +354,22 @@ async function iniciar() {
       selecionar('.menu-btn').setAttribute('aria-label', 'Abrir menu');
     }
   });
+  const detalhe = selecionar('#detalhe');
+  if (detalhe) {
+    detalhe.querySelector('.fechar').addEventListener('click', () => detalhe.close());
+    document.addEventListener('click', evento => {
+      const botao = evento.target.closest('[data-detalhes]');
+      if (!botao) return;
+      const produto = catalogo.get(Number(botao.dataset.detalhes));
+      selecionar('#detalhe-foto').src = caminhoSite(produto.imagem);
+      for (const campo of ['categoria', 'nome', 'descricao']) {
+        selecionar('#detalhe-' + campo).textContent = produto[campo];
+      }
+      selecionar('#detalhe-preco').textContent = dinheiro(produto.preco);
+      selecionar('#detalhe-adicionar').dataset.adicionar = produto.id;
+      detalhe.showModal();
+    });
+  }
   document.addEventListener('click', clicarBotao);
   for (const botao of document.querySelectorAll('[data-account]')) {
     botao.addEventListener('click', function () { trocarFormulario(this.dataset.account); });
@@ -354,6 +386,7 @@ async function iniciar() {
   });
   for (const form of document.querySelectorAll('form')) form.addEventListener('submit', enviarFormulario);
   if (selecionar('#categoria')) {
+    selecionar('#ordem').addEventListener('change', () => selecionar('#filters').requestSubmit());
     selecionar('#categoria').addEventListener('change', function () {
       selecionar('#filters').requestSubmit();
     });

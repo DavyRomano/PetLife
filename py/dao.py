@@ -2,7 +2,7 @@ import sqlite3
 import secrets
 import werkzeug.security
 from contextlib import contextmanager
-from models import Produto
+from models import Produto, Carrinho, Pedido
 
 class Banco:
     def __init__(self, caminho):
@@ -20,31 +20,39 @@ class Banco:
             banco.close()
 
     def iniciar(self, pasta):
-        try:
-            with open(self.caminho, 'rb'):
-                novo = False
-        except FileNotFoundError:
-            novo = True
+        with open(pasta + '/sql/petlife.sql', encoding='utf-8') as arquivo:
+            estrutura, catalogo = arquivo.read().split('-- Catálogo inicial')
         with self.conectar() as banco:
-            with open(pasta + '/sql/petlife.sql', encoding='utf-8') as arquivo:
-                banco.executescript(arquivo.read())
-            colunas = [c['name'] for c in banco.execute('PRAGMA table_info(usuarios)')]
-            if 'admin' not in colunas:
-                banco.execute('ALTER TABLE usuarios ADD COLUMN admin INTEGER NOT NULL DEFAULT 0 CHECK(admin IN (0,1))')
-            banco.execute("UPDATE produtos SET imagem='img/racao.jpg' WHERE imagem='img/raçao.jpg'")
-            if novo:
-                banco.executemany('INSERT INTO produtos (nome,categoria,descricao,preco,imagem) VALUES (?,?,?,?,?)', [
-                    ('Ração Premium Gatos','Ração','Ração para gatos adultos.',74.90,'img/racao.jpg'),
-                    ('Bola Interativa','Brinquedo','Bola para estimular a brincadeira.',34.90,'img/bola.jpg'),
-                    ('Cama Confortável','Acessório','Cama macia para descanso.',119.90,'img/cama.jpg'),
-                    ('Coleira PetLife','Acessório','Coleira confortável para passeios.',39.90,'img/coleira.jpg'),
-                    ('Shampoo Pet','Higiene','Cuidado para a hora do banho. Produto e imagem ilustrativos.',29.90,'img/shampoo.jpg')])
-            versao = banco.execute('PRAGMA user_version').fetchone()[0]
-            if versao < 2:
-                if not banco.execute("SELECT id FROM produtos WHERE categoria='Higiene'").fetchone():
-                    banco.execute('INSERT INTO produtos (nome,categoria,descricao,preco,imagem) VALUES (?,?,?,?,?)',
-                                  ('Shampoo Pet','Higiene','Cuidado para a hora do banho. Produto e imagem ilustrativos.',29.90,'img/shampoo.jpg'))
-                banco.execute('PRAGMA user_version = 2')
+            banco.execute('PRAGMA foreign_keys = OFF')
+            banco.execute('BEGIN IMMEDIATE')
+            if banco.execute('PRAGMA user_version').fetchone()[0] >= 3:
+                return
+            antigo = banco.execute("SELECT 1 FROM sqlite_master WHERE name='produtos'").fetchone()
+            # O banco antigo guardava a categoria sem chave estrangeira.
+            comando = ''
+            for linha in estrutura.splitlines(True):
+                comando += linha
+                if sqlite3.complete_statement(comando):
+                    banco.execute(comando)
+                    comando = ''
+            if antigo:
+                banco.execute('INSERT OR IGNORE INTO categorias SELECT DISTINCT categoria FROM produtos')
+                banco.execute("""CREATE TABLE produtos_novos (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL,
+                    categoria TEXT NOT NULL REFERENCES categorias(nome), descricao TEXT,
+                    preco REAL NOT NULL CHECK(preco > 0), imagem TEXT)""")
+                banco.execute('INSERT INTO produtos_novos SELECT id,nome,categoria,descricao,preco,imagem FROM produtos')
+                banco.execute('DROP TABLE produtos')
+                banco.execute('ALTER TABLE produtos_novos RENAME TO produtos')
+                banco.execute("UPDATE produtos SET imagem='img/racao.jpg' WHERE imagem='img/raçao.jpg'")
+                if 'admin' not in [c['name'] for c in banco.execute('PRAGMA table_info(usuarios)')]:
+                    banco.execute('ALTER TABLE usuarios ADD COLUMN admin INTEGER NOT NULL DEFAULT 0 CHECK(admin IN (0,1))')
+            else:
+                banco.execute(catalogo)
+            if banco.execute('PRAGMA foreign_key_check').fetchone():
+                raise ValueError('O banco contém um relacionamento inválido.')
+            banco.execute('PRAGMA user_version = 3')
+
 
 class ProdutoDAO(Banco):
     def listar(self, busca='', categoria=''):
@@ -79,18 +87,14 @@ class LojaDAO(Banco):
 
     def carrinho(self, dono):
         with self.conectar() as banco:
-            itens = [dict(p) for p in banco.execute('SELECT produtos.*, carrinho.quantidade FROM carrinho JOIN produtos ON produtos.id=carrinho.produto_id WHERE dono=? ORDER BY produtos.id', (dono,))]
-        total = 0
-        quantidade = 0
-        for produto in itens:
-            total += round(produto['preco'] * 100) * produto['quantidade']
-            quantidade += produto['quantidade']
-        return {'itens': itens, 'total': total / 100, 'quantidade': quantidade}
+            itens = [dict(p) for p in banco.execute('SELECT produtos.*, carrinho.quantidade FROM carrinho INNER JOIN produtos ON produtos.id=carrinho.produto_id WHERE dono=? ORDER BY produtos.id', (dono,))]
+        return Carrinho(itens).resumo()
 
     def quantidade(self, dono, id, quantidade, adicionar=False):
         if type(quantidade) is not int or not 0 <= quantidade <= 99:
             raise ValueError('A quantidade deve estar entre 0 e 99.')
         with self.conectar() as banco:
+            banco.execute('BEGIN IMMEDIATE')
             if not banco.execute('SELECT id FROM produtos WHERE id=?', (id,)).fetchone():
                 raise ValueError('Produto não encontrado.')
             if adicionar:
@@ -103,15 +107,15 @@ class LojaDAO(Banco):
             else:
                 banco.execute('INSERT INTO carrinho VALUES (?,?,?) ON CONFLICT(dono,produto_id) DO UPDATE SET quantidade=excluded.quantidade', (dono,id,quantidade))
 
+
+class PedidoDAO(Banco):
     def finalizar(self, dono, nome):
         with self.conectar() as banco:
             banco.execute('BEGIN IMMEDIATE')
-            itens = banco.execute('SELECT nome,preco,quantidade FROM carrinho JOIN produtos ON produtos.id=carrinho.produto_id WHERE dono=?', (dono,)).fetchall()
+            itens = banco.execute('SELECT nome,preco,quantidade FROM carrinho INNER JOIN produtos ON produtos.id=carrinho.produto_id WHERE dono=?', (dono,)).fetchall()
             if not itens:
                 raise ValueError('Seu carrinho está vazio.')
-            total = 0
-            for item in itens:
-                total += round(item['preco'] * 100) * item['quantidade']
+            total = Pedido(itens).total_centavos()
             id = banco.execute('INSERT INTO pedidos (dono,nome,total) VALUES (?,?,?)', (dono,nome,total / 100)).lastrowid
             banco.executemany('INSERT INTO itens_pedido (pedido_id,nome,preco,quantidade) VALUES (?,?,?,?)', [(id,p['nome'],p['preco'],p['quantidade']) for p in itens])
             banco.execute('DELETE FROM carrinho WHERE dono=?', (dono,))
@@ -124,6 +128,19 @@ class LojaDAO(Banco):
                 pedido.pop('dono')
                 pedido['itens'] = [dict(p) for p in banco.execute('SELECT nome,preco,quantidade FROM itens_pedido WHERE pedido_id=?', (pedido['id'],))]
             return pedidos
+
+    def painel(self):
+        with self.conectar() as banco:
+            consulta = """SELECT p.id, p.nome, p.total, p.criado_em,
+                                 COALESCE(SUM(i.quantidade), 0) AS unidades
+                          FROM pedidos p LEFT JOIN itens_pedido i ON i.pedido_id = p.id
+                          GROUP BY p.id ORDER BY p.id DESC"""
+            categorias = """SELECT c.nome, COUNT(p.id) AS produtos FROM categorias c
+                            LEFT JOIN produtos p ON p.categoria = c.nome
+                            GROUP BY c.nome ORDER BY c.nome"""
+            return {'pedidos': [dict(p) for p in banco.execute(consulta)],
+                    'categorias': [dict(c) for c in banco.execute(categorias)]}
+
 
 class UsuarioDAO(Banco):
     def por_id(self, id):
@@ -164,6 +181,8 @@ class UsuarioDAO(Banco):
                 raise ValueError('Usuário não encontrado.')
             banco.execute('DELETE FROM carrinho WHERE dono=?', ('usuario:'+str(id),))
 
+
+class ContatoDAO(Banco):
     def mensagem(self, nome, email, assunto, mensagem):
         with self.conectar() as banco:
             banco.execute('INSERT INTO contatos (nome,email,assunto,mensagem) VALUES (?,?,?,?)', (nome,email,assunto,mensagem))

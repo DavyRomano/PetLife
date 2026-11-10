@@ -20,6 +20,8 @@ banco.iniciar(PASTA)
 produtos = dao.ProdutoDAO(BANCO)
 loja = dao.LojaDAO(BANCO)
 usuarios = dao.UsuarioDAO(BANCO)
+pedidos_dao = dao.PedidoDAO(BANCO)
+contatos_dao = dao.ContatoDAO(BANCO)
 
 def usuario_atual():
     usuario = flask.session.get('usuario')
@@ -30,7 +32,7 @@ def proteger():
     # A permissão é conferida no banco em cada requisição protegida.
     caminho = flask.request.path
     metodo = flask.request.method
-    admin = (caminho.startswith('/api/usuarios') or
+    admin = (caminho == '/api/painel' or caminho.startswith('/api/usuarios') or
              (caminho == '/api/contatos' and metodo in ('GET', 'HEAD')) or
              (caminho.startswith('/api/produtos') and metodo not in ('GET', 'HEAD', 'OPTIONS')))
     if admin:
@@ -140,12 +142,16 @@ def alterar_carrinho(id):
 
 @app.get('/api/pedidos')
 def pedidos():
-    return flask.jsonify(loja.pedidos(dono()))
+    return flask.jsonify(pedidos_dao.pedidos(dono()))
 
 @app.post('/api/pedidos')
 def finalizar():
     nome = campo(dados(), 'nome', 2, 100)
-    return flask.jsonify(id=loja.finalizar(dono(),nome)), 201
+    return flask.jsonify(id=pedidos_dao.finalizar(dono(),nome)), 201
+
+@app.get('/api/painel')
+def painel():
+    return flask.jsonify(pedidos_dao.painel())
 
 @app.get('/api/sessao')
 def sessao():
@@ -203,13 +209,13 @@ def excluir_usuario(id):
 @app.route('/api/contatos', methods=['GET','POST'])
 def contatos():
     if flask.request.method == 'GET':
-        return flask.jsonify(usuarios.contatos())
+        return flask.jsonify(contatos_dao.contatos())
     d = dados()
     valores = [campo(d, 'nome', 2, 100), campo(d, 'email', 3, 150),
                campo(d, 'assunto', 2, 150), campo(d, 'mensagem', 5, 1000)]
     if not email_valido(valores[1]):
         raise ValueError('Preencha todos os campos corretamente.')
-    usuarios.mensagem(*valores)
+    contatos_dao.mensagem(*valores)
     return flask.jsonify(ok=True),201
 
 @app.cli.command('tornar-admin')

@@ -31,3 +31,23 @@ class Produto:
         self.descricao = descricao.strip()
         self.preco = preco
         self.imagem = imagem
+
+
+class Pedido:
+    def __init__(self, itens):
+        self.itens = itens
+
+    def total_centavos(self):
+        return sum(round(item['preco'] * 100) * item['quantidade'] for item in self.itens)
+
+
+class Carrinho:
+    def __init__(self, itens):
+        self.itens = itens
+
+    def resumo(self):
+        return {
+            'itens': self.itens,
+            'quantidade': sum(item['quantidade'] for item in self.itens),
+            'total': Pedido(self.itens).total_centavos() / 100
+        }

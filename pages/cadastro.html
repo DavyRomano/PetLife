@@ -3,181 +3,95 @@
  <head>
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-  <meta content="#173e32" name="theme-color"/>
+  <meta content="#2563EB" name="theme-color"/>
   <meta content="PetLife: produtos, cuidados e carinho para seu melhor amigo. Loja demonstrativa de um projeto escolar." name="description"/>
-  <title>
-   Minha conta | PetLife
-  </title>
+  <title>Minha conta | PetLife</title>
   <link href="../img/pata.svg" rel="icon"/>
   <link href="../css/style.css" rel="stylesheet"/>
   <script defer="" src="../js/script.js">
   </script>
  </head>
  <body class="account-page">
-  <a class="skip-link" href="#conteudo">
-   Pular para o conteúdo
-  </a>
+  <a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
   <div class="announcement">
-   <span>
-    Uma vida mais feliz começa com uma patinha.
-   </span>
-   <a href="../pages/sobre.html">
-    Conheça a PetLife ↗
-   </a>
+   <span>Pet shop para cães e gatos</span>
+   <a href="../pages/sobre.html">Conheça a PetLife ↗</a>
   </div>
   <header class="header">
    <a class="logo" href="../index.html">
-    <img alt="" src="../img/pata.svg"/>
-    PetLife
-    <span class="logo-dot">
-     .
-    </span>
+    <img alt="" src="../img/pata.svg"/>PetLife<span class="logo-dot">.</span>
    </a>
    <nav aria-label="Navegação principal" id="menu">
-    <a href="../index.html">
-     Início
-    </a>
-    <a href="../pages/produtos.html">
-     Produtos
-    </a>
-    <a href="../pages/servicos.html">
-     Serviços
-    </a>
-    <a href="../pages/sobre.html">
-     Sobre
-    </a>
-    <a href="../pages/contato.html">
-     Contato
-    </a>
-    <a class="mobile-account" href="../pages/cadastro.html">
-     Minha conta
-    </a>
-    <a class="mobile-account" href="../pages/pedidos.html">
-     Meus pedidos
-    </a>
+    <a href="../index.html">Início</a>
+    <a href="../pages/produtos.html">Produtos</a>
+    <a href="../pages/servicos.html">Serviços</a>
+    <a href="../pages/sobre.html">Sobre</a>
+    <a href="../pages/contato.html">Contato</a>
+    <a class="mobile-account" href="../pages/cadastro.html">Minha conta</a>
+    <a class="mobile-account" href="../pages/pedidos.html">Meus pedidos</a>
    </nav>
    <div class="header-actions">
     <a aria-label="Buscar produtos" class="icon-button" href="../pages/produtos.html?buscar=1">
      <img alt="" src="../img/busca.svg"/>
     </a>
-    <a class="account-link" href="../pages/cadastro.html" id="account-link">
-     Minha conta
-    </a>
+    <a class="account-link" href="../pages/cadastro.html" id="account-link">Minha conta</a>
     <a aria-label="Ver carrinho" class="cart-pill" href="../pages/carrinho.html">
      <img alt="" src="../img/carrinho.svg"/>
-     <span id="cart-count">
-      0
-     </span>
-     <span class="sr-only" id="cart-total">
-      R$ 0,00
-     </span>
+     <span id="cart-count">0</span>
+     <span class="sr-only" id="cart-total">R$ 0,00</span>
     </a>
    </div>
-   <button aria-controls="menu" aria-expanded="false" aria-label="Abrir menu" class="menu-btn">
-    ☰
-   </button>
+   <button aria-controls="menu" aria-expanded="false" aria-label="Abrir menu" class="menu-btn">☰</button>
   </header>
   <main class="page" id="conteudo">
    <div class="account-layout">
     <section class="account-story">
-     <span class="eyebrow">
-      SEU CANTINHO NA PETLIFE
-     </span>
-     <h1>
-      Você, seu pet
-      <br/>
-      e uma vida
-      <br/>
-      mais
-      <em>
-       feliz.
-      </em>
+     <span class="eyebrow">SEU CANTINHO NA PETLIFE</span>
+     <h1>Você, seu pet<br/>e uma vida<br/>mais <em>feliz.</em>
      </h1>
-     <p>
-      Entre para guardar seu carrinho e acompanhar cada boa escolha.
-     </p>
+     <p>Entre para guardar seu carrinho e acompanhar cada boa escolha.</p>
      <img alt="Gato se espreguiçando em uma almofada" height="800" src="../img/descanso.webp" width="1200"/>
     </section>
     <section class="account-panel">
      <div hidden="" id="logged-in">
-      <span class="eyebrow">
-       PODE ENTRAR, A CASA É SUA
-      </span>
+      <span class="eyebrow">PODE ENTRAR, A CASA É SUA</span>
       <h2 id="welcome">
       </h2>
-      <p>
-       Sua conta está conectada. Qual vai ser o próximo mimo?
-      </p>
+      <p>Sua conta está conectada. Qual vai ser o próximo mimo?</p>
       <div class="account-shortcuts">
-       <a href="../pages/pedidos.html">
-        Meus pedidos ↗
-       </a>
-       <a href="../pages/carrinho.html">
-        Meu carrinho ↗
-       </a>
-       <a data-admin="" hidden="" href="../pages/administracao.html">
-        Administração ↗
-       </a>
+       <a href="../pages/pedidos.html">Meus pedidos ↗</a>
+       <a href="../pages/carrinho.html">Meu carrinho ↗</a>
+       <a data-admin="" hidden="" href="../pages/administracao.html">Administração ↗</a>
       </div>
-      <button class="btn btn-outline" id="logout">
-       Sair da conta
-      </button>
+      <button class="btn btn-outline" id="logout">Sair da conta</button>
      </div>
      <div id="account-forms">
       <div aria-label="Escolher formulário" class="account-tabs" role="group">
-       <button aria-pressed="true" data-account="login" type="button">
-        Entrar
-       </button>
-       <button aria-pressed="false" data-account="register" type="button">
-        Criar conta
-       </button>
+       <button aria-pressed="true" data-account="login" type="button">Entrar</button>
+       <button aria-pressed="false" data-account="register" type="button">Criar conta</button>
       </div>
       <form class="form-card" id="login-form">
-       <span class="eyebrow">
-        BOM TER VOCÊ DE VOLTA
-       </span>
-       <h2>
-        Olá de novo!
-       </h2>
-       <label>
-        E-mail
-        <input autocomplete="email" maxlength="150" name="email" placeholder="voce@exemplo.com" required="" type="email"/>
+       <span class="eyebrow">BOM TER VOCÊ DE VOLTA</span>
+       <h2>Olá de novo!</h2>
+       <label>E-mail<input autocomplete="email" maxlength="150" name="email" placeholder="voce@exemplo.com" required="" type="email"/>
        </label>
-       <label>
-        Senha
-        <input autocomplete="current-password" maxlength="128" name="senha" required="" type="password"/>
+       <label>Senha<input autocomplete="current-password" maxlength="128" name="senha" required="" type="password"/>
        </label>
-       <button class="btn" type="submit">
-        Entrar na minha conta ↗
-       </button>
+       <button class="btn" type="submit">Entrar na minha conta ↗</button>
        <p class="form-feedback" role="status">
        </p>
       </form>
       <form class="form-card" hidden="" id="register-form">
-       <span class="eyebrow">
-        PRIMEIRA VISITA?
-       </span>
-       <h2>
-        Vamos nos conhecer.
-       </h2>
-       <label>
-        Seu nome
-        <input autocomplete="name" maxlength="100" minlength="2" name="nome" required="" type="text"/>
+       <span class="eyebrow">PRIMEIRA VISITA?</span>
+       <h2>Vamos nos conhecer.</h2>
+       <label>Seu nome<input autocomplete="name" maxlength="100" minlength="2" name="nome" required="" type="text"/>
        </label>
-       <label>
-        E-mail
-        <input autocomplete="email" maxlength="150" name="email" required="" type="email"/>
+       <label>E-mail<input autocomplete="email" maxlength="150" name="email" required="" type="email"/>
        </label>
-       <label>
-        Senha
-        <input autocomplete="new-password" maxlength="128" minlength="8" name="senha" placeholder="Pelo menos 8 caracteres" required="" type="password"/>
+       <label>Senha<input autocomplete="new-password" maxlength="128" minlength="8" name="senha" placeholder="Pelo menos 8 caracteres" required="" type="password"/>
        </label>
-       <p class="muted">
-        Escolha uma senha exclusiva para sua conta.
-       </p>
-       <button class="btn" type="submit">
-        Criar minha conta ↗
-       </button>
+       <p class="muted">Escolha uma senha exclusiva para sua conta.</p>
+       <button class="btn" type="submit">Criar minha conta ↗</button>
        <p class="form-feedback" role="status">
        </p>
       </form>
@@ -189,78 +103,38 @@
    <div class="footer-main">
     <div class="footer-brand">
      <a class="logo" href="../index.html">
-      <img alt="" loading="lazy" src="../img/pata.svg"/>
-      PetLife.
-     </a>
-     <p>
-      Pequenos cuidados.
-      <br/>
-      Uma vida inteira de amor.
-     </p>
-     <span class="footer-note">
-      Feito para quem é da família.
-     </span>
+      <img alt="" loading="lazy" src="../img/pata.svg"/>PetLife.</a>
+     <p>Pequenos cuidados.<br/>Uma vida inteira de amor.</p>
+     <span class="footer-note">Feito para quem é da família.</span>
     </div>
     <div>
-     <h2>
-      Explore
-     </h2>
-     <a href="../pages/produtos.html">
-      Todos os produtos
-     </a>
-     <a href="../pages/servicos.html">
-      Nossos serviços
-     </a>
-     <a href="../pages/sobre.html">
-      Nossa história
-     </a>
+     <h2>Explore</h2>
+     <a href="../pages/produtos.html">Todos os produtos</a>
+     <a href="../pages/servicos.html">Nossos serviços</a>
+     <a href="../pages/sobre.html">Nossa história</a>
     </div>
     <div>
-     <h2>
-      Seu cantinho
-     </h2>
-     <a href="../pages/cadastro.html">
-      Minha conta
-     </a>
-     <a href="../pages/carrinho.html">
-      Meu carrinho
-     </a>
-     <a href="../pages/pedidos.html">
-      Meus pedidos
-     </a>
-     <a data-admin="" hidden="" href="../pages/administracao.html">
-      Administração
-     </a>
+     <h2>Seu cantinho</h2>
+     <a href="../pages/cadastro.html">Minha conta</a>
+     <a href="../pages/carrinho.html">Meu carrinho</a>
+     <a href="../pages/pedidos.html">Meus pedidos</a>
+     <a data-admin="" hidden="" href="../pages/administracao.html">Administração</a>
     </div>
     <div>
-     <h2>
-      Vamos conversar?
-     </h2>
-     <p>
-      Uma dúvida ou uma ideia?
-      <br/>
-      Nosso formulário está por aqui.
-     </p>
-     <a class="text-link" href="../pages/contato.html">
-      Fale com a PetLife ↗
-     </a>
+     <h2>Vamos conversar?</h2>
+     <p>Uma dúvida ou uma ideia?<br/>Nosso formulário está por aqui.</p>
+     <a class="text-link" href="../pages/contato.html">Fale com a PetLife ↗</a>
     </div>
    </div>
    <div class="footer-bottom">
-    <span>
-     © 2026 PetLife · Projeto escolar
-    </span>
-    <span>
-     Compras e serviços demonstrativos, sem cobrança ou entrega real.
-    </span>
+    <span>© 2026 PetLife · Projeto escolar</span>
+    <span>Compras e serviços demonstrativos, sem cobrança ou entrega real.</span>
    </div>
   </footer>
   <div aria-live="polite" id="aviso" role="status">
   </div>
   <noscript>
-   <p class="no-script">
-    Ative o JavaScript para usar o catálogo, sua conta e o carrinho.
-   </p>
+   <p class="no-script">Ative o JavaScript para usar o catálogo, sua conta e o carrinho.</p>
   </noscript>
  </body>
 </html>
