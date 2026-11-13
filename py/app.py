@@ -20,22 +20,24 @@ banco.iniciar(PASTA)
 produtos = dao.ProdutoDAO(BANCO)
 loja = dao.LojaDAO(BANCO)
 usuarios = dao.UsuarioDAO(BANCO)
-pedidos_dao = dao.PedidoDAO(BANCO)
-contatos_dao = dao.ContatoDAO(BANCO)
 
+# Usamos o ID da sessão para consultar a conta atual no banco.
 def usuario_atual():
     usuario = flask.session.get('usuario')
-    return usuarios.por_id(usuario['id']) if usuario else None
+    if usuario:
+        return usuarios.por_id(usuario['id'])
+    return None
 
+# Confere a permissão das rotas administrativas e o token das alterações.
 @app.before_request
 def proteger():
     # A permissão é conferida no banco em cada requisição protegida.
     caminho = flask.request.path
     metodo = flask.request.method
-    admin = (caminho == '/api/painel' or caminho.startswith('/api/usuarios') or
-             (caminho == '/api/contatos' and metodo in ('GET', 'HEAD')) or
-             (caminho.startswith('/api/produtos') and metodo not in ('GET', 'HEAD', 'OPTIONS')))
-    if admin:
+    gerencia_usuarios = caminho.startswith('/api/usuarios')
+    lista_contatos = caminho == '/api/contatos' and metodo in ('GET', 'HEAD')
+    altera_produtos = caminho.startswith('/api/produtos') and metodo not in ('GET', 'HEAD', 'OPTIONS')
+    if gerencia_usuarios or lista_contatos or altera_produtos:
         usuario = usuario_atual()
         if not usuario:
             return flask.jsonify(erro='Entre com uma conta de administrador.'), 401
@@ -57,12 +59,14 @@ def cabecalhos(resposta):
         resposta.headers['Cache-Control'] = 'no-store'
     return resposta
 
+# Entrega ao navegador o token da sessão atual.
 @app.get('/api/csrf')
 def csrf():
     if 'csrf' not in flask.session:
         flask.session['csrf'] = dao.novo_codigo()
     return flask.jsonify(token=flask.session['csrf'])
 
+# Escolhe a chave que identifica o carrinho e os pedidos desta sessão.
 def dono():
     if 'usuario' in flask.session:
         if usuario_atual():
@@ -72,6 +76,7 @@ def dono():
         flask.session['visitante'] = dao.novo_codigo()
     return flask.session['visitante']
 
+# Lê os campos enviados pelo JavaScript em formato JSON.
 def dados():
     valor = flask.request.get_json(silent=True)
     if not isinstance(valor, dict):
@@ -80,10 +85,19 @@ def dados():
 
 def email_valido(email):
     partes = email.split('@')
-    return len(partes) == 2 and bool(partes[0]) and '.' in partes[1] and not any(letra.isspace() for letra in email)
+    if len(partes) != 2:
+        return False
+    nome, dominio = partes
+    if not nome or '.' not in dominio:
+        return False
+    for letra in email:
+        if letra.isspace():
+            return False
+    return True
 
-def campo(d, nome, minimo, maximo):
-    valor = d.get(nome, '')
+# Confere o tamanho do texto antes de usar o campo do formulário.
+def campo(formulario, nome, minimo, maximo):
+    valor = formulario.get(nome, '')
     if not isinstance(valor, str) or not minimo <= len(valor.strip()) <= maximo:
         raise ValueError('Confira o campo ' + nome + '.')
     return valor.strip()
@@ -116,62 +130,84 @@ def arquivos(pasta, arquivo):
 def produtos_antigos():
     return flask.redirect('/pages/produtos.html')
 
+# Pede ao DAO os produtos que atendem aos filtros do catálogo.
 @app.get('/api/produtos')
 def listar_produtos():
-    return flask.jsonify(produtos.listar(flask.request.args.get('busca',''), flask.request.args.get('categoria','')))
+    busca = flask.request.args.get('busca', '')
+    categoria = flask.request.args.get('categoria', '')
+    return flask.jsonify(produtos.listar(busca, categoria))
 
+# Envia os dados ao DAO para cadastrar ou editar o produto.
 @app.post('/api/produtos')
 @app.put('/api/produtos/<int:id>')
 def salvar_produto(id=None):
-    return flask.jsonify(id=produtos.salvar(dados(), id))
+    formulario = dados()
+    produto_id = produtos.salvar(formulario, id)
+    return flask.jsonify(id=produto_id)
 
 @app.delete('/api/produtos/<int:id>')
 def excluir_produto(id):
     produtos.excluir(id)
     return flask.jsonify(ok=True)
 
+# Devolve os itens e os totais do carrinho desta sessão.
 @app.get('/api/carrinho')
 def carrinho():
-    return flask.jsonify(loja.carrinho(dono()))
+    dono_carrinho = dono()
+    resumo = loja.carrinho(dono_carrinho)
+    return flask.jsonify(resumo)
 
+# Recebe a quantidade e devolve o carrinho atualizado.
 @app.post('/api/carrinho/<int:id>')
 @app.put('/api/carrinho/<int:id>')
 def alterar_carrinho(id):
-    loja.quantidade(dono(), id, dados().get('quantidade',1), flask.request.method == 'POST')
-    return flask.jsonify(loja.carrinho(dono()))
+    dono_carrinho = dono()
+    formulario = dados()
+    quantidade = formulario.get('quantidade', 1)
+    # POST soma unidades ao item. PUT define a quantidade escolhida no carrinho.
+    adicionar = flask.request.method == 'POST'
+    loja.quantidade(dono_carrinho, id, quantidade, adicionar)
+    carrinho_atualizado = loja.carrinho(dono_carrinho)
+    return flask.jsonify(carrinho_atualizado)
 
+# Busca o histórico de pedidos do dono identificado pela sessão.
 @app.get('/api/pedidos')
 def pedidos():
-    return flask.jsonify(pedidos_dao.pedidos(dono()))
+    dono_carrinho = dono()
+    historico = loja.pedidos(dono_carrinho)
+    return flask.jsonify(historico)
 
+# Valida o nome e pede ao DAO que registre a compra.
 @app.post('/api/pedidos')
 def finalizar():
-    nome = campo(dados(), 'nome', 2, 100)
-    return flask.jsonify(id=pedidos_dao.finalizar(dono(),nome)), 201
-
-@app.get('/api/painel')
-def painel():
-    return flask.jsonify(pedidos_dao.painel())
+    formulario = dados()
+    nome = campo(formulario, 'nome', 2, 100)
+    dono_carrinho = dono()
+    pedido_id = loja.finalizar(dono_carrinho, nome)
+    return flask.jsonify(id=pedido_id), 201
 
 @app.get('/api/sessao')
 def sessao():
     return flask.jsonify(usuario_atual())
 
+# Confere os campos do cadastro antes de enviar a conta ao banco.
 @app.post('/api/cadastro')
 def cadastro():
-    d = dados()
-    nome = campo(d, 'nome', 2, 100)
-    email = campo(d, 'email', 3, 150).lower()
-    senha = d.get('senha', '')
+    formulario = dados()
+    nome = campo(formulario, 'nome', 2, 100)
+    email = campo(formulario, 'email', 3, 150).lower()
+    senha = formulario.get('senha', '')
     if not email_valido(email) or not isinstance(senha, str) or not 8 <= len(senha) <= 128:
         raise ValueError('Confira os dados. Use uma senha entre 8 e 128 caracteres.')
-    return flask.jsonify(id=usuarios.cadastrar(nome,email,senha)), 201
+    usuario_id = usuarios.cadastrar(nome, email, senha)
+    return flask.jsonify(id=usuario_id), 201
 
+# Confere as credenciais e inicia a sessão da conta.
 @app.post('/api/login')
 def login():
-    d = dados()
-    email = campo(d, 'email', 3, 150)
-    senha = d.get('senha', '')
+    formulario = dados()
+    email = campo(formulario, 'email', 3, 150)
+    senha = formulario.get('senha', '')
     if not isinstance(senha, str) or not 1 <= len(senha) <= 128:
         raise ValueError('E-mail ou senha incorretos.')
     usuario = usuarios.entrar(email, senha)
@@ -190,6 +226,7 @@ def login():
     }
     return flask.jsonify(usuario_atual())
 
+# Encerra a sessão usada pelo navegador.
 @app.post('/api/logout')
 def logout():
     flask.session.clear()
@@ -206,16 +243,19 @@ def excluir_usuario(id):
     usuarios.excluir(id)
     return flask.jsonify(ok=True)
 
+# Recebe uma mensagem do formulário ou lista as mensagens para o painel.
 @app.route('/api/contatos', methods=['GET','POST'])
 def contatos():
     if flask.request.method == 'GET':
-        return flask.jsonify(contatos_dao.contatos())
-    d = dados()
-    valores = [campo(d, 'nome', 2, 100), campo(d, 'email', 3, 150),
-               campo(d, 'assunto', 2, 150), campo(d, 'mensagem', 5, 1000)]
-    if not email_valido(valores[1]):
+        return flask.jsonify(usuarios.contatos())
+    formulario = dados()
+    nome = campo(formulario, 'nome', 2, 100)
+    email = campo(formulario, 'email', 3, 150)
+    assunto = campo(formulario, 'assunto', 2, 150)
+    mensagem = campo(formulario, 'mensagem', 5, 1000)
+    if not email_valido(email):
         raise ValueError('Preencha todos os campos corretamente.')
-    contatos_dao.mensagem(*valores)
+    usuarios.mensagem(nome, email, assunto, mensagem)
     return flask.jsonify(ok=True),201
 
 @app.cli.command('tornar-admin')
