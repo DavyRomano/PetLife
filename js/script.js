@@ -8,39 +8,66 @@ function selecionar(seletor) {
   return document.querySelector(seletor);
 }
 
-const catalogo = new Map();
 let usuarioAtual = null;
+let administrador = false;
 let tokenCsrf = '';
 
 function dinheiro(valor) {
   return Number(valor).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
 }
 
+// Escapa os caracteres que poderiam virar HTML dentro dos cards.
 function texto(valor) {
-  return String(valor ?? '')
-    .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;').replaceAll("'", '&#39;');
+  if (valor == null) {
+    return '';
+  }
+  let seguro = String(valor);
+  seguro = seguro.replaceAll('&', '&amp;');
+  seguro = seguro.replaceAll('<', '&lt;');
+  seguro = seguro.replaceAll('>', '&gt;');
+  seguro = seguro.replaceAll('"', '&quot;');
+  return seguro.replaceAll("'", '&#39;');
 }
 
+// Lê o JSON e mostra ao código da tela se houve um erro.
+async function lerResposta(resposta) {
+  let dados;
+  try {
+    dados = await resposta.json();
+  } catch {
+    throw new Error('O servidor não respondeu corretamente. Tente novamente.');
+  }
+  if (!resposta.ok) {
+    throw new Error(dados.erro || 'Não foi possível concluir a ação.');
+  }
+  return dados;
+}
+
+// Prepara o pedido e espera o Flask responder.
 async function api(caminho, metodo = 'GET', dados) {
   const opcoes = {method: metodo, headers: {}};
+
   if (metodo !== 'GET') {
-    if (!tokenCsrf) tokenCsrf = (await api('csrf')).token;
+    // O Flask pede o token da sessão para aceitar uma mudança.
+    if (!tokenCsrf) {
+      const respostaToken = await fetch(caminhoSite('api/csrf'));
+      const sessao = await lerResposta(respostaToken);
+      tokenCsrf = sessao.token;
+    }
     opcoes.headers['X-CSRF-Token'] = tokenCsrf;
   }
   if (dados) {
     opcoes.headers['Content-Type'] = 'application/json';
     opcoes.body = JSON.stringify(dados);
   }
-  const resposta = await fetch(caminhoSite('api/' + caminho), opcoes);
-  const resultado = await resposta.json().catch(function () {
-    throw new Error('O servidor não respondeu corretamente. Tente novamente.');
-  });
-  if (!resposta.ok) throw new Error(resultado.erro || 'Não foi possível concluir a ação.');
-  return resultado;
+
+  const endereco = caminhoSite('api/' + caminho);
+  const resposta = await fetch(endereco, opcoes);
+  return lerResposta(resposta);
 }
 
 let tempoAviso;
+// Mostra um recado temporário no site.
 function avisar(mensagem) {
   selecionar('#aviso').textContent = mensagem;
   selecionar('#aviso').classList.add('show');
@@ -50,6 +77,7 @@ function avisar(mensagem) {
   }, 4500);
 }
 
+// Monta o aviso usado quando a lista está vazia.
 function vazio(titulo, mensagem) {
   return `<div class="empty">
     <span class="empty-icon" aria-hidden="true">♡</span>
@@ -58,14 +86,15 @@ function vazio(titulo, mensagem) {
   </div>`;
 }
 
+// Mostra a quantidade de unidades e o valor total no cabeçalho.
 function contador(carrinho) {
   selecionar('#cart-count').textContent = carrinho.quantidade;
   selecionar('#cart-total').textContent = dinheiro(carrinho.total);
   selecionar('.cart-pill').setAttribute('aria-label', 'Carrinho com ' + carrinho.quantidade + ' itens');
 }
 
+// Monta o card e guarda o ID do produto no botão de adicionar.
 function card(produto, editar) {
-  catalogo.set(produto.id, produto);
   let botoes = '';
   if (editar) {
     botoes = `<div class="product-admin">
@@ -80,7 +109,6 @@ function card(produto, editar) {
     </div>
     <div class="product-body">
       <h3>${texto(produto.nome)}</h3><p>${texto(produto.descricao)}</p>
-      <button class="link-button detalhes-link" data-detalhes="${produto.id}">Ver detalhes</button>
       <div class="price-row">
         <strong>${dinheiro(produto.preco)}</strong>
         <button class="add-button" data-adicionar="${produto.id}" aria-label="Adicionar ${texto(produto.nome)} ao carrinho">+</button>
@@ -90,53 +118,69 @@ function card(produto, editar) {
   </article>`;
 }
 
+// Busca o catálogo usando os filtros escolhidos na página.
 async function carregarProdutos() {
   const busca = selecionar('#busca').value;
   const categoria = selecionar('#categoria').value;
-  const produtos = await api('produtos?busca=' + encodeURIComponent(busca) + '&categoria=' + encodeURIComponent(categoria));
-  const ordem = selecionar('#ordem').value;
-  if (ordem === 'menor') produtos.sort((a, b) => a.preco - b.preco);
-  if (ordem === 'maior') produtos.sort((a, b) => b.preco - a.preco);
-  if (ordem === 'nome') produtos.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+  const filtros = 'busca=' + encodeURIComponent(busca) + '&categoria=' + encodeURIComponent(categoria);
+  const produtos = await api('produtos?' + filtros);
   let html = '';
-  for (const produto of produtos) html += card(produto, Boolean(usuarioAtual?.admin));
-  if (!produtos.length) html = vazio('Nenhum produto encontrado.', 'Tente outra busca ou categoria.');
+  for (const produto of produtos) {
+    html += card(produto, administrador);
+  }
+  if (produtos.length === 0) {
+    html = vazio('Nenhum produto encontrado.', 'Tente outra busca ou categoria.');
+  }
   selecionar('#products').innerHTML = html;
   selecionar('#result-count').textContent = produtos.length + ' produto(s) no catálogo';
 }
 
+// Mostra até quatro produtos na página inicial.
 async function carregarInicio() {
   const produtos = await api('produtos');
   let html = '';
-  for (const produto of produtos.slice(0, 4)) html += card(produto, false);
-  if (!produtos.length) html = vazio('Novidades em breve.', 'O catálogo está sendo preparado.');
+  for (let i = 0; i < produtos.length && i < 4; i++) {
+    html += card(produtos[i], false);
+  }
+  if (produtos.length === 0) {
+    html = vazio('Novidades em breve.', 'O catálogo está sendo preparado.');
+  }
   selecionar('#home-products').innerHTML = html;
 }
 
+// Desenha os itens do carrinho e libera a finalização quando há produtos.
 function mostrarCarrinho(carrinho) {
   contador(carrinho);
   selecionar('#order-total').textContent = dinheiro(carrinho.total);
   selecionar('#checkout-button').disabled = carrinho.itens.length === 0;
   let html = '';
   for (const item of carrinho.itens) {
+    let bloquearAumento = '';
+    if (item.quantidade >= 99) {
+      bloquearAumento = 'disabled';
+    }
+    const subtotal = item.preco * item.quantidade;
     html += `<article class="cart-item">
       <img src="${texto(caminhoSite(item.imagem))}" alt="${texto(item.nome)}">
       <div><h2>${texto(item.nome)}</h2><p>${dinheiro(item.preco)} / unidade</p>
         <div class="quantity">
           <button data-produto="${item.id}" data-quantidade="${item.quantidade - 1}" aria-label="Diminuir quantidade de ${texto(item.nome)}">−</button>
           <span>${item.quantidade}</span>
-          <button data-produto="${item.id}" data-quantidade="${item.quantidade + 1}" ${item.quantidade >= 99 ? 'disabled' : ''} aria-label="Aumentar quantidade de ${texto(item.nome)}">+</button>
+          <button data-produto="${item.id}" data-quantidade="${item.quantidade + 1}" ${bloquearAumento} aria-label="Aumentar quantidade de ${texto(item.nome)}">+</button>
         </div>
       </div>
-      <div class="item-end"><strong>${dinheiro(item.preco * item.quantidade)}</strong>
+      <div class="item-end"><strong>${dinheiro(subtotal)}</strong>
         <button class="link-button" data-produto="${item.id}" data-quantidade="0">Remover</button>
       </div>
     </article>`;
   }
-  if (!carrinho.itens.length) html = vazio('Ainda cabe muito carinho.', 'Seu carrinho está vazio. Escolha o próximo favorito do seu pet.');
+  if (carrinho.itens.length === 0) {
+    html = vazio('Ainda cabe muito carinho.', 'Seu carrinho está vazio. Escolha o próximo favorito do seu pet.');
+  }
   selecionar('#cart-items').innerHTML = html;
 }
 
+// Monta o histórico e abre o pedido indicado na URL.
 async function carregarPedidos() {
   const pedidos = await api('pedidos');
   const novo = new URLSearchParams(location.search).get('novo');
@@ -148,7 +192,9 @@ async function carregarPedidos() {
     }
     const data = new Date(pedido.criado_em.replace(' ', 'T') + 'Z').toLocaleString('pt-BR');
     let aberto = '';
-    if (String(pedido.id) === novo) aberto = 'open';
+    if (String(pedido.id) === novo) {
+      aberto = 'open';
+    }
     html += `<details class="order" ${aberto}>
       <summary><div><strong>Pedido #${pedido.id}</strong><small>${data} · ${texto(pedido.nome)}</small></div>
         <span class="badge">Registrado</span><strong>${dinheiro(pedido.total)} ⌄</strong>
@@ -156,44 +202,62 @@ async function carregarPedidos() {
       <div class="order-content">${itens}<p class="muted">Pedido demonstrativo. Nenhum pagamento foi cobrado.</p></div>
     </details>`;
   }
-  if (!pedidos.length) html = vazio('Sua história começa aqui.', 'Os pedidos que você finalizar aparecerão nesta página.');
+  if (pedidos.length === 0) {
+    html = vazio('Sua história começa aqui.', 'Os pedidos que você finalizar aparecerão nesta página.');
+  }
   selecionar('#orders').innerHTML = html;
 }
 
+// Consulta a sessão e ajusta os links e formulários para a conta atual.
 async function carregarConta() {
   const usuario = await api('sessao');
   usuarioAtual = usuario;
-  for (const link of document.querySelectorAll('[data-admin]')) link.hidden = !usuario?.admin;
+  administrador = false;
+  if (usuario && usuario.admin) {
+    administrador = true;
+  }
+  for (const link of document.querySelectorAll('[data-admin]')) {
+    link.hidden = !administrador;
+  }
   if (selecionar('#admin-content')) {
-    selecionar('#admin-content').hidden = !usuario?.admin;
-    selecionar('#access-gate').hidden = Boolean(usuario?.admin);
+    selecionar('#admin-content').hidden = !administrador;
+    selecionar('#access-gate').hidden = administrador;
   }
-  if (usuario) selecionar('#account-link').textContent = usuario.nome.split(' ')[0] + ' ↗';
+  if (usuario) {
+    selecionar('#account-link').textContent = usuario.nome.split(' ')[0] + ' ↗';
+  }
   if (selecionar('#account-forms')) {
-    selecionar('#account-forms').hidden = Boolean(usuario);
+    selecionar('#account-forms').hidden = usuario !== null;
     selecionar('#logged-in').hidden = !usuario;
-    if (usuario) selecionar('#welcome').textContent = 'Olá, ' + usuario.nome + '!';
+    if (usuario) {
+      selecionar('#welcome').textContent = 'Olá, ' + usuario.nome + '!';
+    }
   }
-  if (selecionar('#checkout') && usuario) selecionar('#checkout input').value = usuario.nome;
+  if (selecionar('#checkout') && usuario) {
+    selecionar('#checkout input').value = usuario.nome;
+  }
 }
 
+// Preenche o painel com os cadastros, as mensagens e os totais da loja.
 async function carregarAdmin() {
-  const painel = await api('painel');
-  const total = painel.pedidos.reduce((soma, pedido) => soma + Math.round(pedido.total * 100), 0);
-  selecionar('#resumo-pedidos').textContent = painel.pedidos.length + ' pedido(s) · Total registrado de ' + dinheiro(total / 100);
-  const linhas = painel.pedidos.map(p => `<tr><td>#${p.id}</td><td>${texto(p.nome)}</td><td>${p.unidades}</td><td>${dinheiro(p.total)}</td></tr>`);
-  selecionar('#pedidos-loja').innerHTML = linhas.length
-    ? '<table><thead><tr><th>Pedido</th><th>Cliente</th><th>Unidades</th><th>Total</th></tr></thead><tbody>' + linhas.join('') + '</tbody></table>'
-    : '<p>Ainda não há pedidos finalizados.</p>';
-  selecionar('#resumo-categorias').innerHTML = painel.categorias.map(c => `<li>${texto(c.nome)} <b>${c.produtos}</b></li>`).join('');
   const usuarios = await api('usuarios');
   let html = '<table><thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Ação</th></tr></thead><tbody>';
   for (const usuario of usuarios) {
-    html += `<tr><td>${texto(usuario.nome)}</td><td>${texto(usuario.email)}</td><td>${usuario.admin ? 'Administrador' : 'Cliente'}</td>
-      <td>${usuario.id === usuarioAtual.id ? 'Sua conta' : `<button class="link-button delete-link" data-usuario="${usuario.id}">Excluir</button>`}</td></tr>`;
+    let perfil = 'Cliente';
+    if (usuario.admin) {
+      perfil = 'Administrador';
+    }
+    let acao = 'Sua conta';
+    if (usuario.id !== usuarioAtual.id) {
+      acao = `<button class="link-button delete-link" data-usuario="${usuario.id}">Excluir</button>`;
+    }
+    html += `<tr><td>${texto(usuario.nome)}</td><td>${texto(usuario.email)}</td><td>${perfil}</td>
+      <td>${acao}</td></tr>`;
   }
   html += '</tbody></table>';
-  if (!usuarios.length) html = '<p>Nenhum usuário cadastrado.</p>';
+  if (usuarios.length === 0) {
+    html = '<p>Nenhum usuário cadastrado.</p>';
+  }
   selecionar('#users').innerHTML = html;
   const mensagens = await api('contatos');
   html = '';
@@ -201,16 +265,22 @@ async function carregarAdmin() {
     html += `<article class="message-card"><h3>${texto(mensagem.assunto)}</h3>
       <small>${texto(mensagem.nome)} · ${texto(mensagem.email)}</small><p>${texto(mensagem.mensagem)}</p></article>`;
   }
-  if (!mensagens.length) html = '<p>Nenhuma mensagem recebida.</p>';
+  if (mensagens.length === 0) {
+    html = '<p>Nenhuma mensagem recebida.</p>';
+  }
   selecionar('#messages').innerHTML = html;
   selecionar('#stat-users').textContent = usuarios.length;
   selecionar('#stat-messages').textContent = mensagens.length;
-  selecionar('#stat-products').textContent = (await api('produtos')).length;
+  const produtos = await api('produtos');
+  selecionar('#stat-products').textContent = produtos.length;
 }
 
+// Usa o ID da URL para preencher o formulário de edição.
 async function carregarEdicao() {
   const id = Number(new URLSearchParams(location.search).get('id'));
-  if (!id) return;
+  if (!id) {
+    return;
+  }
   const produtos = await api('produtos');
   for (const produto of produtos) {
     if (produto.id === id) {
@@ -231,14 +301,16 @@ function atualizarPrevia() {
   selecionar('.product-preview').src = caminhoSite(imagem);
 }
 
+// Alterna entre entrar e criar uma conta.
 function trocarFormulario(tipo) {
   selecionar('#login-form').hidden = tipo !== 'login';
   selecionar('#register-form').hidden = tipo !== 'register';
   for (const botao of document.querySelectorAll('[data-account]')) {
-    botao.setAttribute('aria-pressed', botao.dataset.account === tipo ? 'true' : 'false');
+    botao.setAttribute('aria-pressed', botao.dataset.account === tipo);
   }
 }
 
+// Identifica o formulário enviado e mostra a resposta na página.
 async function enviarFormulario(evento) {
   evento.preventDefault();
   const form = evento.target;
@@ -246,7 +318,11 @@ async function enviarFormulario(evento) {
   const mensagem = form.querySelector('.form-feedback');
   const rotulo = botao.textContent;
   const dados = {};
-  for (const campo of new FormData(form)) dados[campo[0]] = campo[1];
+  for (const campo of form.elements) {
+    if (campo.name && !campo.disabled) {
+      dados[campo.name] = campo.value;
+    }
+  }
   botao.disabled = true;
   botao.textContent = 'Aguarde…';
   if (mensagem) {
@@ -254,7 +330,9 @@ async function enviarFormulario(evento) {
     mensagem.classList.remove('error');
   }
   try {
-    if (form.id === 'filters') await carregarProdutos();
+    if (form.id === 'filters') {
+      await carregarProdutos();
+    }
     if (form.id === 'register-form') {
       await api('cadastro', 'POST', dados);
       form.reset();
@@ -267,7 +345,8 @@ async function enviarFormulario(evento) {
       await api('login', 'POST', dados);
       tokenCsrf = '';
       await carregarConta();
-      contador(await api('carrinho'));
+      const carrinho = await api('carrinho');
+      contador(carrinho);
       avisar('Você entrou na PetLife.');
     }
     if (form.id === 'contact-form') {
@@ -282,8 +361,11 @@ async function enviarFormulario(evento) {
     }
     if (form.id === 'product-form') {
       const id = new URLSearchParams(location.search).get('id');
-      if (id) await api('produtos/' + id, 'PUT', dados);
-      else await api('produtos', 'POST', dados);
+      if (id) {
+        await api('produtos/' + id, 'PUT', dados);
+      } else {
+        await api('produtos', 'POST', dados);
+      }
       location.href = caminhoSite('pages/administracao.html');
     }
   } catch (erro) {
@@ -291,36 +373,65 @@ async function enviarFormulario(evento) {
       mensagem.textContent = erro.message;
       mensagem.classList.add('error');
     }
-    else avisar(erro.message);
+    else {
+      avisar(erro.message);
+    }
   } finally {
     botao.disabled = false;
     botao.textContent = rotulo;
   }
 }
 
+// O ID vem do botão + do card que recebeu o clique.
+async function adicionarAoCarrinho(produtoId) {
+  const endereco = 'carrinho/' + produtoId;
+  const dados = {quantidade: 1};
+  const carrinho = await api(endereco, 'POST', dados);
+
+  // O Flask já salvou o item. Agora usamos o total que ele devolveu.
+  contador(carrinho);
+  animarCarrinho();
+  avisar('Produto adicionado ao carrinho.');
+}
+
+// Reinicia o destaque do carrinho quando o cliente adiciona outro item.
+function animarCarrinho() {
+  const icone = selecionar('.cart-pill');
+  icone.classList.remove('pulse');
+  icone.getBoundingClientRect();
+  icone.classList.add('pulse');
+}
+
+// Identifica o botão clicado, inclusive nos cards criados depois que a página abriu.
 async function clicarBotao(evento) {
   const botao = evento.target.closest('[data-adicionar], [data-excluir], [data-quantidade], [data-usuario], #logout');
-  if (!botao || botao.disabled) return;
+  if (!botao || botao.disabled) {
+    return;
+  }
   botao.disabled = true;
   try {
     if (botao.dataset.adicionar) {
-      contador(await api('carrinho/' + botao.dataset.adicionar, 'POST', {quantidade: 1}));
-      selecionar('.cart-pill').classList.remove('pulse');
-      void selecionar('.cart-pill').offsetWidth;
-      selecionar('.cart-pill').classList.add('pulse');
-      if (selecionar('#detalhe')?.open) selecionar('#detalhe').close();
-      avisar('Produto adicionado ao carrinho.');
+      await adicionarAoCarrinho(botao.dataset.adicionar);
     }
     if (botao.dataset.excluir && confirm('Excluir este produto? Os pedidos anteriores serão mantidos.')) {
       await api('produtos/' + botao.dataset.excluir, 'DELETE');
       await carregarProdutos();
-      if (selecionar('#users')) await carregarAdmin();
-      contador(await api('carrinho'));
+      if (selecionar('#users')) {
+        await carregarAdmin();
+      }
+      const carrinho = await api('carrinho');
+      contador(carrinho);
       avisar('Produto excluído.');
     }
-    if (botao.dataset.quantidade !== undefined) {
-      if (Number(botao.dataset.quantidade) === 0 && !confirm('Remover este produto do carrinho?')) return;
-      const carrinho = await api('carrinho/' + botao.dataset.produto, 'PUT', {quantidade: Number(botao.dataset.quantidade)});
+    if (botao.hasAttribute('data-quantidade')) {
+      const quantidade = Number(botao.dataset.quantidade);
+      if (quantidade === 0) {
+        const remover = confirm('Remover este produto do carrinho?');
+        if (!remover) {
+          return;
+        }
+      }
+      const carrinho = await api('carrinho/' + botao.dataset.produto, 'PUT', {quantidade: quantidade});
       mostrarCarrinho(carrinho);
     }
     if (botao.dataset.usuario && confirm('Excluir este cadastro?')) {
@@ -341,11 +452,16 @@ async function clicarBotao(evento) {
   }
 }
 
-async function iniciar() {
+// Liga os cliques, os formulários e as animações da página.
+function ligarEventos() {
   selecionar('.menu-btn').addEventListener('click', function () {
     const aberto = selecionar('#menu').classList.toggle('open');
     this.setAttribute('aria-expanded', aberto);
-    this.setAttribute('aria-label', aberto ? 'Fechar menu' : 'Abrir menu');
+    if (aberto) {
+      this.setAttribute('aria-label', 'Fechar menu');
+    } else {
+      this.setAttribute('aria-label', 'Abrir menu');
+    }
   });
   document.addEventListener('keydown', function (evento) {
     if (evento.key === 'Escape') {
@@ -354,22 +470,6 @@ async function iniciar() {
       selecionar('.menu-btn').setAttribute('aria-label', 'Abrir menu');
     }
   });
-  const detalhe = selecionar('#detalhe');
-  if (detalhe) {
-    detalhe.querySelector('.fechar').addEventListener('click', () => detalhe.close());
-    document.addEventListener('click', evento => {
-      const botao = evento.target.closest('[data-detalhes]');
-      if (!botao) return;
-      const produto = catalogo.get(Number(botao.dataset.detalhes));
-      selecionar('#detalhe-foto').src = caminhoSite(produto.imagem);
-      for (const campo of ['categoria', 'nome', 'descricao']) {
-        selecionar('#detalhe-' + campo).textContent = produto[campo];
-      }
-      selecionar('#detalhe-preco').textContent = dinheiro(produto.preco);
-      selecionar('#detalhe-adicionar').dataset.adicionar = produto.id;
-      detalhe.showModal();
-    });
-  }
   document.addEventListener('click', clicarBotao);
   for (const botao of document.querySelectorAll('[data-account]')) {
     botao.addEventListener('click', function () { trocarFormulario(this.dataset.account); });
@@ -384,9 +484,10 @@ async function iniciar() {
       selecionar('.menu-btn').setAttribute('aria-label', 'Abrir menu');
     }
   });
-  for (const form of document.querySelectorAll('form')) form.addEventListener('submit', enviarFormulario);
+  for (const form of document.querySelectorAll('form')) {
+    form.addEventListener('submit', enviarFormulario);
+  }
   if (selecionar('#categoria')) {
-    selecionar('#ordem').addEventListener('change', () => selecionar('#filters').requestSubmit());
     selecionar('#categoria').addEventListener('change', function () {
       selecionar('#filters').requestSubmit();
     });
@@ -401,25 +502,46 @@ async function iniciar() {
         }
       }
     });
-    for (const bloco of document.querySelectorAll('.reveal')) observer.observe(bloco);
+    for (const bloco of document.querySelectorAll('.reveal')) {
+      observer.observe(bloco);
+    }
   }
+}
+
+// Ao abrir uma página, busca somente os dados que ela mostra.
+async function iniciar() {
+  ligarEventos();
   try {
     const parametros = new URLSearchParams(location.search);
     const carrinho = await api('carrinho');
     contador(carrinho);
     await carregarConta();
-    if (selecionar('#home-products')) await carregarInicio();
-    if (selecionar('#products') && (!selecionar('#admin-content') || usuarioAtual?.admin)) {
+    if (selecionar('#home-products')) {
+      await carregarInicio();
+    }
+    if (selecionar('#products') && (!selecionar('#admin-content') || administrador)) {
       selecionar('#busca').value = parametros.get('busca') || '';
       selecionar('#categoria').value = parametros.get('categoria') || '';
       await carregarProdutos();
-      if (parametros.has('buscar')) selecionar('#busca').focus();
+      if (parametros.has('buscar')) {
+        selecionar('#busca').focus();
+      }
     }
-    if (selecionar('#cart-items')) mostrarCarrinho(carrinho);
-    if (selecionar('#orders')) await carregarPedidos();
-    if (selecionar('#users') && usuarioAtual?.admin) await carregarAdmin();
-    if (selecionar('#product-form') && usuarioAtual?.admin) await carregarEdicao();
-    if (selecionar('#contact-form')) selecionar('#contact-form').elements.assunto.value = parametros.get('assunto') || '';
+    if (selecionar('#cart-items')) {
+      mostrarCarrinho(carrinho);
+    }
+    if (selecionar('#orders')) {
+      await carregarPedidos();
+    }
+    if (selecionar('#users') && administrador) {
+      await carregarAdmin();
+    }
+    if (selecionar('#product-form') && administrador) {
+      await carregarEdicao();
+    }
+    if (selecionar('#contact-form')) {
+      selecionar('#contact-form').elements.assunto.value = parametros.get('assunto') || '';
+    }
   } catch (erro) {
     avisar('Não foi possível carregar os dados: ' + erro.message);
     for (const bloco of document.querySelectorAll('.loading')) {
